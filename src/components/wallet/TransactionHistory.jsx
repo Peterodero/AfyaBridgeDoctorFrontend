@@ -1,6 +1,6 @@
 // src/components/wallet/TransactionHistory.jsx
 import { useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, CreditCard } from 'lucide-react'
 
 const STATUS_COLORS = {
   completed: 'text-emerald-600',
@@ -25,11 +25,16 @@ export default function TransactionHistory({ wallet }) {
     try {
       return JSON.parse(atob(str))
     } catch {
-      return []
+      return null
     }
   }
 
-  const transactions = wallet?.transaction_history ? parseBase64(wallet.transaction_history) : []
+  // ✅ FIX: Ensure transactions is always an array, never null
+  let transactions = []
+  if (wallet?.transaction_history) {
+    const parsed = parseBase64(wallet.transaction_history)
+    transactions = Array.isArray(parsed) ? parsed : []
+  }
 
   const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A'
@@ -56,6 +61,7 @@ export default function TransactionHistory({ wallet }) {
     return typeof txn.amount === 'string' ? parseFloat(txn.amount) : txn.amount
   }
 
+  // ✅ Safe to use .length now because transactions is always an array
   return (
     <div className="card overflow-hidden p-0">
       <div className="px-6 py-5 border-b border-slate-100">
@@ -64,7 +70,13 @@ export default function TransactionHistory({ wallet }) {
 
       {transactions.length === 0 ? (
         <div className="p-12 text-center">
-          <p className="text-slate-400 m-0">No transactions yet</p>
+          <div className="flex flex-col items-center gap-3">
+            <CreditCard size={48} className="text-slate-300" />
+            <p className="text-slate-500 m-0">No transactions yet</p>
+            <p className="text-sm text-slate-400 m-0">
+              Your transaction history will appear here once you make a deposit or withdrawal
+            </p>
+          </div>
         </div>
       ) : (
         <div className="divide-y divide-slate-100">
@@ -78,7 +90,7 @@ export default function TransactionHistory({ wallet }) {
               <div key={i} className="hover:bg-slate-50/50 transition-colors">
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : i)}
-                  className="w-full px-6 py-4 flex items-center justify-between gap-4 border-none bg-transparent cursor-pointer"
+                  className="w-full px-6 py-4 flex items-center justify-between gap-4 border-none bg-transparent cursor-pointer text-left"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-900 m-0 capitalize">

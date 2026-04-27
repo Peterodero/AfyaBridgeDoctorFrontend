@@ -14,14 +14,19 @@ export default function WalletBalance({ wallet }) {
     }
   }
 
-  // Parse transaction history to calculate totals
-  const transactionHistory = wallet?.transaction_history ? parseBase64(wallet.transaction_history) : []
+  // ✅ FIX: Safely parse transaction history with null/undefined check
+  let transactionHistory = []
+  if (wallet?.transaction_history) {
+    const parsed = parseBase64(wallet.transaction_history)
+    transactionHistory = Array.isArray(parsed) ? parsed : []
+  }
   
   // Calculate totals from transaction history
   let totalCredit = 0  // Money earned (deposits)
   let totalDebit = 0   // Money spent/withdrawn
   let pendingAmount = 0
 
+  // ✅ Safe to use forEach now - transactionHistory is always an array
   transactionHistory.forEach((txn) => {
     const amount = typeof txn.amount === 'string' ? parseFloat(txn.amount) : txn.amount
     const type = txn.transType || txn.type || ''
@@ -37,8 +42,13 @@ export default function WalletBalance({ wallet }) {
     }
   })
 
-  // Get pending payouts from recent_payouts
-  const recentPayouts = wallet?.recent_payouts ? parseBase64(wallet.recent_payouts) : []
+  // ✅ Safely parse recent payouts with null/undefined check
+  let recentPayouts = []
+  if (wallet?.recent_payouts) {
+    const parsed = parseBase64(wallet.recent_payouts)
+    recentPayouts = Array.isArray(parsed) ? parsed : []
+  }
+  
   const pendingPayouts = recentPayouts.filter(p => p.status === 'pending').reduce((sum, p) => sum + (p.amount || 0), 0)
 
   // Total earned = all credits
