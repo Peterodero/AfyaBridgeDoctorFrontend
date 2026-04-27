@@ -1,6 +1,6 @@
 // src/pages/auth/Login.jsx
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,8 +31,6 @@ const loginSchema = z.object({
 
 export default function Login() {
   const { login } = useAuth();
-  const location = useLocation();
-  const sessionExpired = location.state?.reason === "expired";
 
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -43,7 +41,6 @@ export default function Login() {
     handleSubmit,
     formState: { errors, touchedFields, isValid },
     watch,
-    setError,
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -70,10 +67,6 @@ export default function Login() {
       setServerError(
         err?.message ?? "Invalid email or password. Please try again."
       );
-      // setError("password", {
-      //   type: "manual",
-      //   message: "Invalid credentials",
-      // });
     } finally {
       setIsSubmitting(false);
     }
@@ -130,7 +123,6 @@ export default function Login() {
             Manage appointments, consult patients via telemedicine, and send
             digital prescriptions — all in one place.
           </p>
-         
         </div>
 
         <p className="text-sm text-white/40 relative z-10 m-0 italic">
@@ -169,16 +161,6 @@ export default function Login() {
                 Sign in to your doctor portal
               </p>
             </div>
-
-            {/* Session expired alert */}
-            {sessionExpired && !serverError && (
-              <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 rounded-xl mb-5 border-l-4 border-amber-500">
-                <AlertCircle size={15} className="text-amber-600 shrink-0" />
-                <p className="text-sm font-medium text-amber-700 m-0">
-                  Your session expired. Please sign in again.
-                </p>
-              </div>
-            )}
 
             {/* Server error alert */}
             {serverError && (
