@@ -16,9 +16,9 @@ export default function Navbar() {
 
       {/* Search */}
       <div className="relative w-100">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        {/* <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         <input placeholder="Search patients, appointments..."
-          className="w-full h-10 bg-slate-50 rounded-xl pl-10 pr-4 text-sm text-slate-600 placeholder:text-slate-400 outline-none font-sans border border-slate-300 focus:ring-1 focus:bg-white transition-all" />
+          className="w-full h-10 bg-slate-50 rounded-xl pl-10 pr-4 text-sm text-slate-600 placeholder:text-slate-400 outline-none font-sans border border-slate-300 focus:ring-1 focus:bg-white transition-all" /> */}
       </div>
 
       {/* Right */}
