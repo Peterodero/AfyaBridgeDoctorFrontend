@@ -3,18 +3,24 @@ import { apiClient } from './client'
 
 export const prescriptionsApi = {
   // POST /doctors/patients/prescriptions
-  create: (token, { patientId, items }) =>
+  create: (token, { patientId, appointmentId, items, diagnosis, notes, priority }) =>
     apiClient('/doctors/patients/prescriptions', {
       token,
       method: 'POST',
       body: {
         patient_id: patientId,
+        appointment_id: appointmentId,  // Add if backend supports it
+        diagnosis: diagnosis,
+        notes: notes,
+        priority: priority,
         items: items.map((item) => ({
-          name:         item.drug,
-          dosage:       item.dosage,
-          frequency:    item.freq,
-          duration:     `${item.duration} ${item.durationUnit}`,
-          instructions: item.notes ?? '',
+          name: item.drug_name || item.name,  // Handle both naming conventions
+          dosage: item.dosage,
+          quantity: item.quantity,  // Add quantity field
+          frequency: item.frequency,
+          duration: item.duration,  // Already formatted as "30 Days"
+          route: item.route,
+          instructions: item.notes || '',
         })),
       },
     }),

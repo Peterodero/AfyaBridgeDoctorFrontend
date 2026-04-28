@@ -28,7 +28,15 @@ const inp =
   "w-full h-10 px-3.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-300 outline-none font-sans focus:border-teal focus:ring-2 focus:ring-teal/10 transition-all";
 
 // Confirmation Modal Component
-function ConfirmationModal({ isOpen, onClose, onConfirm, title, message, confirmText = "Clear All", cancelText = "Cancel" }) {
+function ConfirmationModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText = "Clear All",
+  cancelText = "Cancel",
+}) {
   if (!isOpen) return null;
 
   return (
@@ -40,10 +48,10 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, message, confirm
           </div>
           <h3 className="text-lg font-bold text-amber-900 m-0">{title}</h3>
         </div>
-        
+
         <div className="p-6">
           <p className="text-sm text-slate-600 leading-relaxed">{message}</p>
-          
+
           <div className="flex gap-3 mt-6">
             <button
               onClick={onClose}
@@ -65,7 +73,13 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, message, confirm
 }
 
 // Patient selector dropdown
-function PatientSelector({ patients, loading, selected, onSelect, disabled = false }) {
+function PatientSelector({
+  patients,
+  loading,
+  selected,
+  onSelect,
+  disabled = false,
+}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef(null);
@@ -281,7 +295,9 @@ function PharmacySelector({ pharmacies, loading, selected, onSelect }) {
               {getInitials(selected.name)}
             </div>
             <div className="text-left">
-              <span className="font-semibold text-slate-900">{selected.name}</span>
+              <span className="font-semibold text-slate-900">
+                {selected.name}
+              </span>
               <p className="text-[10px] text-slate-400 m-0">
                 {selected.county} · {selected.phone}
               </p>
@@ -340,7 +356,9 @@ function PharmacySelector({ pharmacies, loading, selected, onSelect }) {
             ) : filtered.length === 0 ? (
               <div className="py-6 text-center">
                 <p className="text-xs text-slate-300 m-0">
-                  {query ? "No pharmacies match your search" : "No pharmacies found"}
+                  {query
+                    ? "No pharmacies match your search"
+                    : "No pharmacies found"}
                 </p>
               </div>
             ) : (
@@ -388,7 +406,8 @@ function PharmacySelector({ pharmacies, loading, selected, onSelect }) {
 
           <div className="px-4 py-2 border-t border-slate-50 bg-slate-50/50">
             <p className="text-[10px] text-slate-300 m-0">
-              {filtered.length} pharmacist{filtered.length !== 1 ? "ies" : "y"} available
+              {filtered.length} pharmacist{filtered.length !== 1 ? "ies" : "y"}{" "}
+              available
             </p>
           </div>
         </div>
@@ -400,8 +419,18 @@ function PharmacySelector({ pharmacies, loading, selected, onSelect }) {
 // Delivery type selector
 function DeliveryTypeSelector({ selected, onSelect }) {
   const options = [
-    { value: "home_delivery", label: "Home Delivery", icon: Truck, desc: "Delivered to patient's address" },
-    { value: "pickup", label: "Pickup from Pharmacy", icon: Building2, desc: "Patient picks up from pharmacy" },
+    {
+      value: "home_delivery",
+      label: "Home Delivery",
+      icon: Truck,
+      desc: "Delivered to patient's address",
+    },
+    {
+      value: "pickup",
+      label: "Pickup from Pharmacy",
+      icon: Building2,
+      desc: "Patient picks up from pharmacy",
+    },
   ];
 
   return (
@@ -418,8 +447,13 @@ function DeliveryTypeSelector({ selected, onSelect }) {
           }`}
         >
           <div className="flex items-center gap-2 mb-1">
-            <Icon size={14} className={selected === value ? "text-teal" : "text-slate-400"} />
-            <span className={`text-sm font-semibold ${selected === value ? "text-teal" : "text-slate-700"}`}>
+            <Icon
+              size={14}
+              className={selected === value ? "text-teal" : "text-slate-400"}
+            />
+            <span
+              className={`text-sm font-semibold ${selected === value ? "text-teal" : "text-slate-700"}`}
+            >
               {label}
             </span>
           </div>
@@ -434,9 +468,11 @@ function DeliveryTypeSelector({ selected, onSelect }) {
 export default function EPrescriptions() {
   const location = useLocation();
   const { showToast } = useUI();
-  const { mutate: createPrescription, isPending: isPrescribing } = useCreatePrescription();
+  const { mutate: createPrescription, isPending: isPrescribing } =
+    useCreatePrescription();
   const { mutate: createOrder, isPending: isOrdering } = useCreateOrder();
-  const { data: pharmaciesData, isLoading: pharmaciesLoading } = usePharmacies();
+  const { data: pharmaciesData, isLoading: pharmaciesLoading } =
+    usePharmacies();
 
   const appointmentId = location.state?.appointmentId;
   const preselectedPatientId = location.state?.patientId;
@@ -555,23 +591,31 @@ export default function EPrescriptions() {
       return;
     }
 
-    // ✅ Map items to include quantity explicitly for DB
+    // Map items to match API expectations
     const itemsPayload = items.map((item) => ({
-      drug_name: item.drug,
+      name: item.drug, // API expects 'name'
       dosage: item.dosage,
-      quantity: item.quantity,
+      quantity: item.quantity, // Now included
       frequency: item.freq,
-      duration: item.duration,
+      duration: item.duration, // Already formatted as "30 Days"
       route: item.route,
       notes: item.notes,
     }));
-    console.log("Creating prescription with items:", itemsPayload);
+
+    console.log("Creating prescription with payload:", {
+      patientId: selectedPatient.id,
+      appointmentId,
+      items: itemsPayload,
+      diagnosis: "",
+      notes: notes,
+      priority: "normal",
+    });
 
     createPrescription(
       {
         patientId: selectedPatient.id,
         appointmentId,
-        items: itemsPayload, // ✅ quantity sent to DB inside each item
+        items: itemsPayload,
         diagnosis: "",
         notes: notes,
         priority: "normal",
@@ -585,8 +629,10 @@ export default function EPrescriptions() {
           setSent(true);
           setTimeout(() => setSent(false), 4000);
         },
-        onError: (err) =>
-          showToast(err.message ?? "Failed to create prescription", "error"),
+        onError: (err) => {
+          console.error("Prescription creation error:", err);
+          showToast(err.message ?? "Failed to create prescription", "error");
+        },
       },
     );
   };
@@ -609,7 +655,10 @@ export default function EPrescriptions() {
       },
       {
         onSuccess: () => {
-          showToast("Order created successfully! Pharmacy will process your order.", "success");
+          showToast(
+            "Order created successfully! Pharmacy will process your order.",
+            "success",
+          );
           setTimeout(() => {
             if (!preselectedPatientId) {
               setSelectedPatient(null);
@@ -691,7 +740,9 @@ export default function EPrescriptions() {
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <p className="text-xs font-semibold text-slate-400 m-0 uppercase tracking-[0.6px] mb-2">
-                  {isFromTelemedicine ? "Consultation Patient" : "New E-Prescription"}
+                  {isFromTelemedicine
+                    ? "Consultation Patient"
+                    : "New E-Prescription"}
                 </p>
                 <div className="flex items-center gap-3">
                   <p className="text-sm font-semibold text-slate-700 m-0 shrink-0">
@@ -991,7 +1042,9 @@ export default function EPrescriptions() {
                     {!showOrderSection && (
                       <button
                         onClick={() =>
-                          setItems((prev) => prev.filter((x) => x.id !== item.id))
+                          setItems((prev) =>
+                            prev.filter((x) => x.id !== item.id),
+                          )
                         }
                         className="bg-transparent border-none cursor-pointer p-0.5 text-slate-200 hover:text-danger transition-colors shrink-0"
                       >
@@ -1090,21 +1143,6 @@ export default function EPrescriptions() {
                 </div>
               </>
             )}
-
-            {/* Print button */}
-            <div className="px-4 py-2.5 border-t border-slate-50">
-              <button className="w-full h-9 rounded-lg flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 text-sm font-semibold cursor-pointer hover:bg-slate-50 transition-colors">
-                <Printer size={14} />
-                Print Prescription
-              </button>
-            </div>
-
-            {/* E-signed */}
-            <div className="px-4 py-2.5 border-t border-slate-50 text-center">
-              <p className="text-[10px] font-bold text-slate-300 uppercase tracking-[1px] m-0">
-                E-Signed by {doctorName}
-              </p>
-            </div>
           </div>
 
           {/* Success banner */}
