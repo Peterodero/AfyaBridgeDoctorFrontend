@@ -438,17 +438,14 @@ export default function EPrescriptions() {
   const { mutate: createOrder, isPending: isOrdering } = useCreateOrder();
   const { data: pharmaciesData, isLoading: pharmaciesLoading } = usePharmacies();
 
-  // ✅ Get data from Telemedicine navigation
   const appointmentId = location.state?.appointmentId;
   const preselectedPatientId = location.state?.patientId;
 
-  // Fetch doctor's patients
   const { data: patRes, isLoading: patientsLoading } = usePatients();
 
   const patients =
     patRes?.data?.patients ?? (Array.isArray(patRes?.data) ? patRes.data : []);
-  
-  // ✅ FIXED: Extract pharmacies from the correct data structure
+
   const pharmacies = pharmaciesData?.data ?? pharmaciesData ?? [];
 
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -458,6 +455,7 @@ export default function EPrescriptions() {
   const [createdPrescriptionId, setCreatedPrescriptionId] = useState(null);
   const [drug, setDrug] = useState("");
   const [dosage, setDosage] = useState("");
+  const [quantity, setQuantity] = useState(""); // ✅ quantity state
   const [freq, setFreq] = useState("Twice daily");
   const [dur, setDur] = useState("30");
   const [durUnit, setDurUnit] = useState("Days");
@@ -479,12 +477,12 @@ export default function EPrescriptions() {
     }
   }, [preselectedPatientId, patients, showToast]);
 
-  // Check if there's data to clear
   const hasDataToClear = () => {
     return (
       items.length > 0 ||
       drug.trim() ||
       dosage.trim() ||
+      quantity.trim() ||
       notes.trim() ||
       selectedPatient ||
       selectedPharmacy ||
@@ -493,23 +491,18 @@ export default function EPrescriptions() {
     );
   };
 
-  // Clear all form data
   const handleClearAll = () => {
-    // Reset patient selection (unless from telemedicine)
     if (!preselectedPatientId) {
       setSelectedPatient(null);
     }
-    
-    // Reset pharmacy and order section
     setSelectedPharmacy(null);
     setDeliveryType("home_delivery");
     setItems([]);
     setCreatedPrescriptionId(null);
     setShowOrderSection(false);
-    
-    // Reset medication form fields
     setDrug("");
     setDosage("");
+    setQuantity(""); // ✅ reset quantity
     setFreq("Twice daily");
     setDur("30");
     setDurUnit("Days");
@@ -517,7 +510,6 @@ export default function EPrescriptions() {
     setNotes("");
     setInteraction(null);
     setSent(false);
-    
     showToast("All data cleared", "info");
     setShowClearModal(false);
   };
@@ -527,12 +519,17 @@ export default function EPrescriptions() {
       showToast("Please enter medication name and dosage", "error");
       return;
     }
+    if (!quantity.trim()) {
+      showToast("Please enter quantity", "error");
+      return;
+    }
     setItems((prev) => [
       ...prev,
       {
         id: Date.now(),
         drug,
         dosage,
+        quantity, // ✅ included in item
         freq,
         duration: `${dur} ${durUnit}`,
         route,
@@ -544,6 +541,7 @@ export default function EPrescriptions() {
     );
     setDrug("");
     setDosage("");
+    setQuantity(""); // ✅ reset after add
     setNotes("");
   };
 
@@ -557,14 +555,26 @@ export default function EPrescriptions() {
       return;
     }
 
+    // ✅ Map items to include quantity explicitly for DB
+    const itemsPayload = items.map((item) => ({
+      drug_name: item.drug,
+      dosage: item.dosage,
+      quantity: item.quantity,
+      frequency: item.freq,
+      duration: item.duration,
+      route: item.route,
+      notes: item.notes,
+    }));
+    console.log("Creating prescription with items:", itemsPayload);
+
     createPrescription(
-      { 
-        patientId: selectedPatient.id, 
+      {
+        patientId: selectedPatient.id,
         appointmentId,
-        items,
+        items: itemsPayload, // ✅ quantity sent to DB inside each item
         diagnosis: "",
         notes: notes,
-        priority: "normal"
+        priority: "normal",
       },
       {
         onSuccess: (response) => {
@@ -601,7 +611,6 @@ export default function EPrescriptions() {
         onSuccess: () => {
           showToast("Order created successfully! Pharmacy will process your order.", "success");
           setTimeout(() => {
-            // Reset after successful order
             if (!preselectedPatientId) {
               setSelectedPatient(null);
             }
@@ -611,6 +620,7 @@ export default function EPrescriptions() {
             setShowOrderSection(false);
             setDrug("");
             setDosage("");
+            setQuantity("");
             setNotes("");
           }, 2000);
         },
@@ -662,8 +672,7 @@ export default function EPrescriptions() {
             </div>
           )}
         </div>
-        
-        {/* Clear All Button */}
+
         <button
           onClick={() => setShowClearModal(true)}
           disabled={!hasDataToClear()}
@@ -755,7 +764,7 @@ export default function EPrescriptions() {
             {/* Medication search */}
             <div className="mb-4">
               <label className="text-xs font-semibold text-slate-500 block mb-1.5">
-                Medication Search
+                Medication Name
               </label>
               <div className="relative">
                 <Search
@@ -774,7 +783,7 @@ export default function EPrescriptions() {
               </div>
             </div>
 
-            {/* Dosage + Frequency */}
+            {/* Dosage + Quantity */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="text-xs font-semibold text-slate-500 block mb-1.5">
@@ -787,6 +796,21 @@ export default function EPrescriptions() {
                   className={inp}
                 />
               </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-500 block mb-1.5">
+                  Quantity <span className="text-red-400">*</span>
+                </label>
+                <input
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  placeholder="e.g., 60 tablets"
+                  className={inp}
+                />
+              </div>
+            </div>
+
+            {/* Frequency + Route */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="text-xs font-semibold text-slate-500 block mb-1.5">
                   Frequency
@@ -808,32 +832,6 @@ export default function EPrescriptions() {
                   ))}
                 </select>
               </div>
-            </div>
-
-            {/* Duration + Route */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-500 block mb-1.5">
-                  Duration
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    value={dur}
-                    onChange={(e) => setDur(e.target.value)}
-                    placeholder="30"
-                    className="w-16 h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none font-sans focus:border-teal focus:ring-2 focus:ring-teal/10 transition-all text-center"
-                  />
-                  <select
-                    value={durUnit}
-                    onChange={(e) => setDurUnit(e.target.value)}
-                    className={`${inp} cursor-pointer flex-1`}
-                  >
-                    {["Days", "Weeks", "Months"].map((o) => (
-                      <option key={o}>{o}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
               <div>
                 <label className="text-xs font-semibold text-slate-500 block mb-1.5">
                   Route
@@ -848,6 +846,30 @@ export default function EPrescriptions() {
                       <option key={o}>{o}</option>
                     ),
                   )}
+                </select>
+              </div>
+            </div>
+
+            {/* Duration */}
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-slate-500 block mb-1.5">
+                Duration
+              </label>
+              <div className="flex gap-2">
+                <input
+                  value={dur}
+                  onChange={(e) => setDur(e.target.value)}
+                  placeholder="30"
+                  className="w-16 h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none font-sans focus:border-teal focus:ring-2 focus:ring-teal/10 transition-all text-center"
+                />
+                <select
+                  value={durUnit}
+                  onChange={(e) => setDurUnit(e.target.value)}
+                  className={`${inp} cursor-pointer flex-1`}
+                >
+                  {["Days", "Weeks", "Months"].map((o) => (
+                    <option key={o}>{o}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -914,7 +936,7 @@ export default function EPrescriptions() {
           )}
         </div>
 
-        {/*  Right: Prescription Summary & Order */}
+        {/* ── Right: Prescription Summary & Order ── */}
         <div className="w-70 shrink-0 flex flex-col gap-3">
           <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-50">
@@ -959,6 +981,12 @@ export default function EPrescriptions() {
                       <p className="text-xs text-slate-400 m-0 mt-0.5">
                         {item.dosage} · {item.freq} · {item.duration}
                       </p>
+                      {/* ✅ Show quantity in summary */}
+                      {item.quantity && (
+                        <p className="text-xs text-teal font-semibold m-0 mt-0.5">
+                          Qty: {item.quantity}
+                        </p>
+                      )}
                     </div>
                     {!showOrderSection && (
                       <button
@@ -1006,7 +1034,7 @@ export default function EPrescriptions() {
               </div>
             )}
 
-            {/* Order Section - Shows after prescription is created */}
+            {/* Order Section */}
             {showOrderSection && (
               <>
                 <div className="px-4 py-3 border-t border-slate-50 bg-teal-50/30">
@@ -1016,7 +1044,6 @@ export default function EPrescriptions() {
                   </p>
                 </div>
 
-                {/* Pharmacy Selection */}
                 <div className="px-4 py-3 border-b border-slate-50">
                   <label className="text-xs font-semibold text-slate-500 block mb-2">
                     Select Pharmacy
@@ -1029,7 +1056,6 @@ export default function EPrescriptions() {
                   />
                 </div>
 
-                {/* Delivery Type Selection */}
                 <div className="px-4 py-3 border-b border-slate-50">
                   <label className="text-xs font-semibold text-slate-500 block mb-2">
                     Delivery Method
@@ -1040,7 +1066,6 @@ export default function EPrescriptions() {
                   />
                 </div>
 
-                {/* Create Order Button */}
                 <div className="px-4 py-4">
                   <button
                     onClick={handleCreateOrder}
@@ -1087,7 +1112,9 @@ export default function EPrescriptions() {
             <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-100">
               <CheckCircle size={15} className="text-success shrink-0" />
               <p className="text-xs font-semibold text-success-700 m-0">
-                {showOrderSection ? "Prescription created! Proceed to order." : "Prescription sent successfully!"}
+                {showOrderSection
+                  ? "Prescription created! Proceed to order."
+                  : "Prescription sent successfully!"}
               </p>
             </div>
           )}

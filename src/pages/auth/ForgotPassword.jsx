@@ -35,7 +35,7 @@ export default function ForgotPassword() {
     try {
       const res = await authApi.sendOTP(email)
       setStep('otp')
-      setSuccess('OTP sent to your registered phone number')
+      setSuccess('OTP sent to your registered email')
       console.log(res)
     } catch (err) {
       const errorMessage = err.response?.data?.error || err.message || 'Failed to send OTP'
@@ -52,7 +52,7 @@ export default function ForgotPassword() {
     setSuccess('')
 
     if (!otpCode.trim()) {
-      setError('Please enter the OTP sent to your phone.')
+      setError('Please enter the OTP sent to your email.')
       return
     }
     if (otpCode.length !== 6) {
@@ -127,7 +127,7 @@ export default function ForgotPassword() {
     setError('')
     try {
       await authApi.sendOTP(email)
-      setSuccess('OTP resent to your phone number')
+      setSuccess('OTP resent to your email')
     } catch (err) {
       const errorMessage = err.response?.data?.error || err.message || 'Failed to resend OTP'
       setError(errorMessage)
@@ -163,7 +163,7 @@ export default function ForgotPassword() {
             Reset your<br />password
           </h2>
           <p className="text-base text-white/65 leading-relaxed m-0 mb-10">
-            We'll send a One-Time Password (OTP) to your registered phone number via SMS. Enter the code to reset your password securely.
+            We'll send a One-Time Password (OTP) to your registered email. Enter the code to reset your password securely.
           </p>
           <div className="grid grid-cols-3 gap-3">
             {[{ v:'24/7', l:'Support' }, { v:'Secure', l:'Recovery' }, { v:'5 min', l:'Process' }].map(({ v, l }) => (
@@ -228,7 +228,7 @@ export default function ForgotPassword() {
                 <div className="mb-7">
                   <h1 className="text-[26px] font-black text-slate-900 tracking-tight m-0">Forgot password?</h1>
                   <p className="text-sm text-slate-400 m-0 mt-1.5">
-                    Enter your registered email. We'll send an OTP to your phone.
+                    Enter your registered email. We'll send an OTP to your email.
                   </p>
                 </div>
 
@@ -286,7 +286,7 @@ export default function ForgotPassword() {
                 <div className="mb-7">
                   <h1 className="text-[26px] font-black text-slate-900 tracking-tight m-0">Enter OTP</h1>
                   <p className="text-sm text-slate-400 m-0 mt-1.5">
-                    We sent a 6-digit OTP to the phone number linked to <span className="font-semibold text-slate-600">{email}</span>
+                    We sent a 6-digit OTP to <span className="font-semibold text-slate-600">{email}</span>
                   </p>
                 </div>
 
